@@ -1,18 +1,20 @@
 defmodule Saga do
-  @moduledoc """
-  Documentation for Saga.
-  """
 
-  @doc """
-  Hello world.
+  alias Saga.Apiprocedure.{
+    Saga,
+    SagaFetchAllRequest,
+    SagaFetchAllResponse,
+    SagaMobileService
+  }
 
-  ## Examples
+  def say_hello(requset) do
+    channel = create_channel()
+    {:ok, reply} = channel |> SagaMobileService.Stub.say_hello(requset)
+    reply
+  end
 
-      iex> Saga.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  defp create_channel() do
+    {:ok, channel} = GRPC.Stub.connect("localhost:50051")
+    channel
   end
 end

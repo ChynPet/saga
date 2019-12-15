@@ -1,8 +1,6 @@
 defmodule Saga.Server do
 
   alias Saga.Apiprocedure.{
-    Saga,
-    SagaFetchAllRequest,
     SagaFetchAllResponse,
     SagaMobileService
   }
