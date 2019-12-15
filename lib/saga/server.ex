@@ -1,13 +1,15 @@
 defmodule Saga.Server do
 
-  alias Saga.Apiprocedure.{
-    SagaFetchAllResponse,
-    SagaMobileService
+  alias Saga.Api.{
+    User,
+    Response,
+    InitialState
   }
 
-  use GRPC.Server, service: SagaMobileService.Service
+  use GRPC.Server, service: InitialState.Service
 
-  def say_hello(request, _stream) do
-    SagaFetchAllResponse.new(message: "Hello #{request.name}")
+  @spec sign_up_email(Saga.Api.User.t, GRPC.Server.Stream.t) :: Saga.Api.Response.t
+  def sign_up_email(request, _stream) do
+    Response.new(user: request, res: true)
   end
 end

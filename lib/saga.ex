@@ -1,15 +1,15 @@
 defmodule Saga do
 
-  alias Saga.Apiprocedure.{
-    Saga,
-    SagaFetchAllRequest,
-    SagaFetchAllResponse,
-    SagaMobileService
+  alias Saga.Api.{
+    User,
+    InitialState
   }
 
-  def say_hello(requset) do
+  use GenStateMachine
+
+  def sign_up_email(requset) do
     channel = create_channel()
-    {:ok, reply} = channel |> SagaMobileService.Stub.say_hello(requset)
+    {:ok, reply} = channel |> InitialState.Stub.sign_up_email(requset)
     reply
   end
 

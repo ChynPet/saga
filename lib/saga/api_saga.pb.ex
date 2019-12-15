@@ -1,53 +1,39 @@
-defmodule Saga.Apiprocedure.Saga do
+defmodule Saga.Api.User do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          id: String.t(),
-          name: String.t()
+          email: String.t(),
+          password: String.t()
         }
-  defstruct [:id, :name]
+  defstruct [:email, :password]
 
-  field :id, 1, type: :string
-  field :name, 2, type: :string
+  field :email, 1, type: :string
+  field :password, 2, type: :string
 end
 
-defmodule Saga.Apiprocedure.SagaFetchAllRequest do
+defmodule Saga.Api.Response do
   @moduledoc false
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
-          page_size: integer,
-          page_token: String.t()
+          user: [Saga.Api.User.t()],
+          res: boolean
         }
-  defstruct [:page_size, :page_token]
+  defstruct [:user, :res]
 
-  field :page_size, 1, type: :int32
-  field :page_token, 2, type: :string
+  field :user, 1, repeated: true, type: Saga.Api.User
+  field :res, 2, type: :bool
 end
 
-defmodule Saga.Apiprocedure.SagaFetchAllResponse do
+defmodule Saga.Api.InitialState.Service do
   @moduledoc false
-  use Protobuf, syntax: :proto3
+  use GRPC.Service, name: "saga.api.InitialState"
 
-  @type t :: %__MODULE__{
-          sagas: [Saga.Apiprocedure.Saga.t()],
-          response: String.t()
-        }
-  defstruct [:sagas, :response]
-
-  field :sagas, 1, repeated: true, type: Saga.Apiprocedure.Saga
-  field :response, 2, type: :string
+  rpc :SignUpEmail, Saga.Api.User, stream(Saga.Api.Response)
 end
 
-defmodule Saga.Apiprocedure.SagaMobileService.Service do
+defmodule Saga.Api.InitialState.Stub do
   @moduledoc false
-  use GRPC.Service, name: "saga.apiprocedure.SagaMobileService"
-
-  rpc :say_hello, Saga.Apiprocedure.Saga, stream(Saga.Apiprocedure.SagaFetchAllResponse)
-end
-
-defmodule Saga.Apiprocedure.SagaMobileService.Stub do
-  @moduledoc false
-  use GRPC.Stub, service: Saga.Apiprocedure.SagaMobileService.Service
+  use GRPC.Stub, service: Saga.Api.InitialState.Service
 end
