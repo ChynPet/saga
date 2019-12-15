@@ -1,0 +1,27 @@
+// protoc --elixir_out=plugins=grpc:./ ./apps/categories/lib/categories/api_mobile/*.proto
+
+syntax = "proto3";
+
+// option java_multiple_files = true;
+// option java_package = "elixir_starter_pack.categories.api_mobile";
+
+package saga.apiprocedure;
+
+message Saga {
+  string id = 1;
+  string name = 2;
+}
+
+message SagaFetchAllRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message SagaFetchAllResponse {
+  repeated Saga sagas = 1;
+  string response = 2;
+}
+
+service SagaMobileService {
+  rpc say_hello(Saga) returns (stream SagaFetchAllResponse) {};
+}
