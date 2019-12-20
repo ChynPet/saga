@@ -1,0 +1,12 @@
+{application,saga,
+             [{applications,[kernel,stdlib,elixir,logger,gen_state_machine,
+                             poison,grpc]},
+              {description,"saga"},
+              {modules,['Elixir.Saga','Elixir.Saga.Api.InitialState.Service',
+                        'Elixir.Saga.Api.InitialState.Stub',
+                        'Elixir.Saga.Api.Response','Elixir.Saga.Api.User',
+                        'Elixir.Saga.Application','Elixir.Saga.Endpoint',
+                        'Elixir.Saga.Server','Elixir.Sagas.Email.SignUp']},
+              {registered,[]},
+              {vsn,"0.1.0"},
+              {mod,{'Elixir.Saga.Application',[]}}]}.
