@@ -15,6 +15,9 @@ defmodule Saga.MixProject do
   def application do
     [
       extra_applications: [:logger],
+      applications: [
+        :kafka_ex, :grpc
+      ],
       mod: {Saga.Application, []}
     ]
   end
@@ -26,7 +29,8 @@ defmodule Saga.MixProject do
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
       {:grpc, github: "elixir-grpc/grpc"},
       {:gen_state_machine, "~> 2.0"},
-      {:poison, "~> 3.1"}
+      {:poison, "~> 3.1"},
+      {:kafka_ex, "~> 0.10"}
     ]
   end
 end

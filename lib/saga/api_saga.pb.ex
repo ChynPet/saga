@@ -3,13 +3,17 @@ defmodule Saga.Api.User do
   use Protobuf, syntax: :proto3
 
   @type t :: %__MODULE__{
+          user_id: String.t(),
           email: String.t(),
-          password: String.t()
+          password: String.t(),
+          token: String.t()
         }
-  defstruct [:email, :password]
+  defstruct [:user_id, :email, :password, :token]
 
-  field :email, 1, type: :string
-  field :password, 2, type: :string
+  field :user_id, 1, type: :string
+  field :email, 2, type: :string
+  field :password, 3, type: :string
+  field :token, 4, type: :string
 end
 
 defmodule Saga.Api.Response do

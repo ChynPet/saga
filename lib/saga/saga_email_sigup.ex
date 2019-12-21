@@ -4,15 +4,14 @@ defmodule Sagas.Email.SignUp do
     :gen_fsm.start_link({:local, __MODULE__}, __MODULE__, [], [])
   end
 
-
-  def init(start) do
+  def init([]) do
     :erlang.process_flag(:trap_exit, true)
-    {:ok, :sign_up, start}
+    {:ok, :sign_up, []}
   end
 
   #Event
-  def send_email(user), do: :gen_fsm.send_event(__MODULE__, {:send_email, user})
-  def email_add(user), do: :gen_fsm.send_event(__MODULE__, {:email_add, user})
+  def send_email(user), do: :gen_fsm.cast(__MODULE__, {:send_email, user})
+  def email_add(value), do: :gen_fsm.send_event(__MODULE__, {:email_add, value})
   def confirm_email(user), do: :gen_fsm.send_event(__MODULE__, {:confirm_email, user})
   def email_confirmed(user), do: :gen_fsm.send_event(__MODULE__, {:email_confirmed, user})
   def send_token(user), do: :gen_fsm.send_event(__MODULE__, {:send_token, user})
@@ -20,13 +19,17 @@ defmodule Sagas.Email.SignUp do
 
   #State
   def sign_up({:send_email, user}, _loop_data) do
-    {:next_state, :sending_email, user}
+    user_json = Poison.encode!(user)
+    KafkaEx.produce("test", 0, user_json)
+    {:next_state, :sending_email, {user_json, 0}}
   end
 
-  def sending_email({:email_add, user}, _loop_data) do
-    {:next_state, :email_added, user}
+  def sending_email({:email_add, value}, _loop_data) do
+    decode = Poison.decode!(value.value)
+    {:next_state, :email_added, decode}
   end
 
+  @spec email_added({:confirm_email, any}, any) :: {:next_state, :confirming_email, any}
   def email_added({:confirm_email, user}, _loop_data) do
     {:next_state, :confirming_email, user}
   end
