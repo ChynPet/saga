@@ -27,6 +27,10 @@ defmodule Sagas.Email.SignUp do
     GenStateMachine.cast(pid, {:send_token, token})
   end
 
+  def get_data (pid) do
+    GenStateMachine.call(pid, :get_data)
+  end
+
   def stop(pid) do
     GenStateMachine.stop(pid)
   end
@@ -40,7 +44,7 @@ defmodule Sagas.Email.SignUp do
   #States FSM
   def sign_up(:cast, {:send_email, user}, _loop_data) do
     user_json = Poison.encode!(user)
-    KafkaEx.produce("test", 0, user_json)
+    KafkaEx.produce(Kafka.Topics.authentication, 0, user_json)
     {:next_state, :sending_email, user}
   end
 
@@ -53,20 +57,28 @@ defmodule Sagas.Email.SignUp do
   def email_added(:cast, {:confirm_email, user}, loop_data) do
     message = %{email: user.email, user_id: loop_data.user_id}
     message_json = Poison.encode!(message)
-    KafkaEx.produce("test1", 0, message_json)
-    {:next_state, :confirming_email, user}
+    KafkaEx.produce(Kafka.Topics.email, 0, message_json)
+    {:next_state, :confirming_email, loop_data}
   end
 
   def confirming_email(:cast, {:email_confirmed, answer}, loop_data) do
     decode = Poison.decode!(answer.value, as: %{answer: answer})
-    {:next_state, :email_added, {loop_data, decode}}
+    {:next_state, :email_confirmed, {loop_data, decode}}
   end
 
   def email_confirmed(:cast, {:send_token, token}, loop_data) do
     message = %{token_device: token}
     message_json = Poison.encode!(message)
-    KafkaEx.produce("test2", 0, message_json)
-    {:next_state, :end, loop_data}
+    KafkaEx.produce(Kafka.Topics.notification, 0, message_json)
+    {:next_state, :token_sended, loop_data}
+  end
+
+  def token_sended(event_type, event_content, data) do
+    handle_event(event_type, event_content, data)
+  end
+
+  def handle_event({:call, from}, :get_data, data) do
+    {:keep_state_and_data, [{:reply, from, data}]}
   end
 
 end

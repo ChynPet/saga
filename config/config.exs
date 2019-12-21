@@ -4,7 +4,7 @@ config :grpc, start_server: true
 
 config :kafka_ex,
   brokers: [
-    {"localhost", 9092},
+    {"10.50.0.1", 9092},
   ],
 
   consumer_group: "kafka_ex",

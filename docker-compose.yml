@@ -1,0 +1,36 @@
+version: '3.7'
+
+networks:
+  contracts-server-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.50.0.0/16
+
+volumes:
+  kafkaVolume: null
+  mongoVolume: null
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      contracts-server-network:
+        ipv4_address: 10.50.1.1
+
+  kafka:
+      build: ./kafka
+      ports:
+        - "9092:9092"
+      depends_on:
+        - zookeeper
+      networks:
+        contracts-server-network:
+          ipv4_address: 10.50.1.2
+      environment:
+        KAFKA_ADVERTISED_HOST_NAME: 10.50.0.1
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      volumes:
+        - kafkaVolume:/var/run/docker.sock
