@@ -1,52 +1,72 @@
 defmodule Sagas.Email.SignUp do
+  use GenStateMachine, callback_mode: :state_functions
+
+  #API Client
 
   def start_link do
-    :gen_fsm.start_link({:local, __MODULE__}, __MODULE__, [], [])
+    GenStateMachine.start_link(__MODULE__, {:sign_up, []})
   end
 
-  def init([]) do
-    :erlang.process_flag(:trap_exit, true)
-    {:ok, :sign_up, []}
+  def send_email(pid, user) do
+    GenStateMachine.cast(pid, {:send_email, user})
   end
 
-  #Event
-  def send_email(user), do: :gen_fsm.cast(__MODULE__, {:send_email, user})
-  def email_add(value), do: :gen_fsm.send_event(__MODULE__, {:email_add, value})
-  def confirm_email(user), do: :gen_fsm.send_event(__MODULE__, {:confirm_email, user})
-  def email_confirmed(user), do: :gen_fsm.send_event(__MODULE__, {:email_confirmed, user})
-  def send_token(user), do: :gen_fsm.send_event(__MODULE__, {:send_token, user})
-  def stop(), do: :gen_fsm.sync_send_all_state_event(__MODULE__, {:stop})
+  def email_add(pid, value) do
+    GenStateMachine.cast(pid, {:email_add, value})
+  end
 
-  #State
-  def sign_up({:send_email, user}, _loop_data) do
+  def confirm_email(pid, user) do
+    GenStateMachine.cast(pid, {:confirm_email, user})
+  end
+
+  def email_confirmed(pid, answer) do
+    GenStateMachine.cast(pid, {:email_confirmed, answer})
+  end
+
+  def send_token(pid, token) do
+    GenStateMachine.cast(pid, {:send_token, token})
+  end
+
+  def stop(pid) do
+    GenStateMachine.stop(pid)
+  end
+
+  #Structure for storing information from microservice Authentication
+  defmodule User do
+    @derive [Poison.Encoder]
+    defstruct [:userid, :access_token]
+  end
+
+  #States FSM
+  def sign_up(:cast, {:send_email, user}, _loop_data) do
     user_json = Poison.encode!(user)
     KafkaEx.produce("test", 0, user_json)
-    {:next_state, :sending_email, {user_json, 0}}
+    {:next_state, :sending_email, user}
   end
 
-  def sending_email({:email_add, value}, _loop_data) do
-    decode = Poison.decode!(value.value)
-    {:next_state, :email_added, decode}
+  def sending_email(:cast, {:email_add, value}, %Saga.Api.User{user_id: user_id, email: email, password: password, token: token}) do
+    decode = Poison.decode!(value.value, as: %Sagas.Email.SignUp.User{})
+    user = Saga.Api.User.new(user_id: decode.userid, email: email, password: password, token: decode.access_token)
+    {:next_state, :email_added, user}
   end
 
-  @spec email_added({:confirm_email, any}, any) :: {:next_state, :confirming_email, any}
-  def email_added({:confirm_email, user}, _loop_data) do
+  def email_added(:cast, {:confirm_email, user}, loop_data) do
+    message = %{email: user.email, user_id: loop_data.user_id}
+    message_json = Poison.encode!(message)
+    KafkaEx.produce("test1", 0, message_json)
     {:next_state, :confirming_email, user}
   end
 
-  def confirming_email({:email_confirmed, user}, _loop_data) do
-    {:next_state, :confirmed_email, user}
+  def confirming_email(:cast, {:email_confirmed, answer}, loop_data) do
+    decode = Poison.decode!(answer.value, as: %{answer: answer})
+    {:next_state, :email_added, {loop_data, decode}}
   end
 
-  def confirmed_email({:send_token, user}, user) do
-    {:next_state, :stop, user}
+  def email_confirmed(:cast, {:send_token, token}, loop_data) do
+    message = %{token_device: token}
+    message_json = Poison.encode!(message)
+    KafkaEx.produce("test2", 0, message_json)
+    {:next_state, :end, loop_data}
   end
 
-  def handle_sync_event({:stop}, _from, _state, _loop_date) do
-    {:stop, :normal, []}
-  end
-
-  def terminate(_reason, _statem_name, _loop_data) do
-    :ok
-  end
 end

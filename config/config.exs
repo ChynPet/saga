@@ -1,5 +1,7 @@
 use Mix.Config
 
+config :grpc, start_server: true
+
 config :kafka_ex,
   brokers: [
     {"localhost", 9092},
@@ -21,5 +23,4 @@ env_config = Path.expand("#{Mix.env()}.exs", __DIR__)
 if File.exists?(env_config) do
   import_config(env_config)
 
-config :grpc, start_server: true
 end

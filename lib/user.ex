@@ -1,4 +1,4 @@
-defmodule Saga do
+defmodule User do
 
   alias Saga.Api.{
     User,
