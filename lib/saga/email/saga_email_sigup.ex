@@ -45,32 +45,45 @@ defmodule Sagas.Email.SignUp do
   def sign_up(:cast, {:send_email, user}, _loop_data) do
     user_json = Poison.encode!(user)
     KafkaEx.produce(Kafka.Topics.authentication, 0, user_json)
-    {:next_state, :sending_email, user}
+    {:next_state, :sending_email, {:sending_email, user}}
   end
 
-  def sending_email(:cast, {:email_add, value}, %Saga.Api.User{user_id: user_id, email: email, password: password, token: token}) do
+  def sign_up(event_type, event_content, data) do
+    handle_event(event_type, event_content, data)
+  end
+
+  def sending_email(:cast, {:email_add, value}, {:sending_email, %Saga.Api.User{user_id: user_id, email: email, password: password, token: token}}) do
     decode = Poison.decode!(value.value, as: %Sagas.Email.SignUp.User{})
     user = Saga.Api.User.new(user_id: decode.userid, email: email, password: password, token: decode.access_token)
-    {:next_state, :email_added, user}
+    {:next_state, :email_added, {:email_added, user}}
   end
 
-  def email_added(:cast, {:confirm_email, user}, loop_data) do
+  def sending_email(event_type, event_content, data) do
+    handle_event(event_type, event_content, data)
+  end
+
+  def email_added(:cast, {:confirm_email, user}, {:email_added, loop_data}) do
     message = %{email: user.email, user_id: loop_data.user_id}
     message_json = Poison.encode!(message)
     KafkaEx.produce(Kafka.Topics.email, 0, message_json)
-    {:next_state, :confirming_email, loop_data}
+    {:next_state, :confirming_email, {:confirming_email, loop_data}}
   end
 
-  def confirming_email(:cast, {:email_confirmed, answer}, loop_data) do
+
+
+  def email_added(event_type, event_content, data) do
+    handle_event(event_type, event_content, data)
+  end
+  def confirming_email(:cast, {:email_confirmed, answer},  {:confirming_email, loop_data}) do
     decode = Poison.decode!(answer.value, as: %{answer: answer})
-    {:next_state, :email_confirmed, {loop_data, decode}}
+    {:next_state, :email_confirmed, {:email_confirmed, {loop_data, decode}}}
   end
 
-  def email_confirmed(:cast, {:send_token, token}, loop_data) do
+  def email_confirmed(:cast, {:send_token, token}, {:email_confirmed, {loop_data, decode}}) do
     message = %{token_device: token}
     message_json = Poison.encode!(message)
     KafkaEx.produce(Kafka.Topics.notification, 0, message_json)
-    {:next_state, :token_sended, loop_data}
+    {:next_state, :token_sended, {:token_sended, {loop_data, decode}}}
   end
 
   def token_sended(event_type, event_content, data) do
