@@ -1,7 +1,7 @@
 defmodule Email.Answer do
   def answer_authentication(pid) do
-    KafkaEx.produce(Kafka.Topics.answer_authentication, 0 , "{\"userid\": \"5\", \"access_token\": \"5\"}")
-    res = KafkaEx.fetch(Kafka.Topics.answer_authentication, 0)
+    KafkaEx.produce(Kafka.Topics.authentication_token_create, 0 , "{\"userid\": \"5\", \"access_token\": \"5\"}")
+    res = KafkaEx.fetch(Kafka.Topics.authentication_token_create, 0)
     answer = List.to_tuple(List.first(List.first(res).partitions).message_set)
     size = tuple_size(answer)
     cond do
@@ -13,7 +13,6 @@ defmodule Email.Answer do
   def answer_authentication(pid, answer) do
     value = elem(answer, 0)
     Sagas.Email.SignUp.email_add(pid, value)
-
   end
 
   def answer_email(pid) do

@@ -14,11 +14,43 @@ message User {
   string token = 4;
 }
 
-message Response {
+message UserFacebook {
+  string user_id = 1;
+  string user_idfacebook = 2;
+  string user_pic = 3;
+  string token_facebook = 4;
+  string token = 5;
+}
+
+message UserInstagram {
+  string user_id = 1;
+  string user_idinstagram= 2;
+  string user_pic = 3;
+  string token_instagram = 4;
+  string token = 5;
+}
+
+message ResponseEmail {
   repeated User user = 1;
-  bool res = 2;
+  string message = 2;
+}
+
+message ResponseFacebook {
+  repeated UserFacebook user = 1;
+  string message = 2;
+}
+
+message ResponseInstagram {
+  repeated UserInstagram user = 1;
+  string message = 2;
 }
 
 service InitialState {
-  rpc SignUpEmail(User) returns (stream Response) {};
+  rpc SignUpEmail(User) returns (stream ResponseEmail) {};
+  rpc SignUpFacebook(UserFacebook) returns (stream ResponseFacebook) {};
+  rpc SignUpInstagram(UserInstagram) returns (stream ResponseInstagram) {};
+
+  rpc SignInEmail(User) returns (stream ResponseEmail) {};
+  rpc SignInFacebook(UserFacebook) returns (stream ResponseFacebook) {};
+  rpc SignInInstagram(UserInstagram) returns (stream ResponseInstagram) {};
 }

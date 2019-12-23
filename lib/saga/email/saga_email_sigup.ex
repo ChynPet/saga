@@ -42,9 +42,11 @@ defmodule Sagas.Email.SignUp do
   end
 
   #States FSM
+
+  #Authentication Microservice
   def sign_up(:cast, {:send_email, user}, _loop_data) do
     user_json = Poison.encode!(user)
-    KafkaEx.produce(Kafka.Topics.authentication, 0, user_json)
+    KafkaEx.produce(Kafka.Topics.authentication_sign_up, 0, user_json)
     {:next_state, :sending_email, {:sending_email, user}}
   end
 
@@ -62,14 +64,13 @@ defmodule Sagas.Email.SignUp do
     handle_event(event_type, event_content, data)
   end
 
+  #Email Microservice
   def email_added(:cast, {:confirm_email, user}, {:email_added, loop_data}) do
     message = %{email: user.email, user_id: loop_data.user_id}
     message_json = Poison.encode!(message)
-    KafkaEx.produce(Kafka.Topics.email, 0, message_json)
+    KafkaEx.produce(Kafka.Topics.confirm_email, 0, message_json)
     {:next_state, :confirming_email, {:confirming_email, loop_data}}
   end
-
-
 
   def email_added(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
@@ -79,12 +80,14 @@ defmodule Sagas.Email.SignUp do
     {:next_state, :email_confirmed, {:email_confirmed, {loop_data, decode}}}
   end
 
+  #Notification
   def email_confirmed(:cast, {:send_token, token}, {:email_confirmed, {loop_data, decode}}) do
     message = %{token_device: token}
     message_json = Poison.encode!(message)
-    KafkaEx.produce(Kafka.Topics.notification, 0, message_json)
+    KafkaEx.produce(Kafka.Topics.save_device_token, 0, message_json)
     {:next_state, :token_sended, {:token_sended, {loop_data, decode}}}
   end
+
 
   def token_sended(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
