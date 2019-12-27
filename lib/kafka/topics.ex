@@ -3,12 +3,18 @@ defmodule Kafka.Topics do
   def authentication_sign_up do
     "sign_up"
   end
-  def answer_authentication_sign_in do
+  def answer_authentication_sign_up do
+    "token_created"
+  end
+
+  def authentication_sign_in do
     "sign_in"
   end
-  def authentication_token_create do
-    "token_create"
+
+  def answer_authentication_sign_in do
+    "token_created"
   end
+
   #Email
   def confirm_email do
     "confirm_email"
