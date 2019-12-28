@@ -11,6 +11,10 @@ defmodule Kafka.Topics do
     "sign_in"
   end
 
+  def authentication_token_create do
+    "token_create"
+  end
+
   def answer_authentication_sign_in do
     "token_created"
   end

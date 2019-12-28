@@ -6,78 +6,75 @@ defmodule Sagas.Facebook.SignIn do
     GenStateMachine.start_link(__MODULE__, {:sign_in, []})
   end
 
-  def mouth(pid, user) do
-    GenStateMachine.cast(pid, {:mouth, user})
+  def login(pid, user) do
+    GenStateMachine.cast(pid, {:login, user})
   end
 
-  def send_token(pid, data) do
-    GenStateMachine.cast(pid, {:send_token, data})
+  def create_token(pid, data) do
+    GenStateMachine.cast(pid, {:create_token, data})
+  end
+
+  def save_token_notification(pid, data) do
+    GenStateMachine.cast(pid, {:save_token_notification, data})
   end
 
   def get_data(pid) do
     GenStateMachine.call(pid, {:get_data})
   end
 
-  def reset(pid) do
-    GenStateMachine.cast(pid, {:reset})
-  end
-
   def stop(pid) do
     GenStateMachine.stop(pid)
   end
 
-  defmodule Answer_Authentication do
-    @derive [Poison.Encoder]
-    defstruct [:user_id, :token, :answer]
-  end
   #States FSM
 
-  def sign_in(:cast, {:mouth, user}, _loop_data) do
-    struct_message = %{id: user.user_idfacebook, token: user.token_facebook}
-    message = Poison.encode!(struct_message)
-    KafkaEx.produce(Kafka.Topics.answer_authentication_sign_in, 0, message)
-    res = answer_authentication()
-    {:next_state, :departure_token_device, {:departure_token_device}}
+  #Send on Facebook
+  def sign_in(:cast, {:login, user}, _loop_data) do
+    message = %{facebook_token: user.token_facebook, facebook_id: user.user_idfacebook}
+    Facebook.send_message_sign_in(message, 0)
+    answer = Facebook.answer_facebook_id(0)
+    case answer.answer do
+      "ok" -> {:next_state, :authentication, {:authentication, user}}
+      _ -> {:next_state, :error, {:error, answer.answer}}
+    end
+
   end
 
   def sign_in(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
   end
 
-  def answer_authentication do
-    KafkaEx.produce(Kafka.Topics.sign_in_facebook, 0 , "{\"user_id\": \"1\", \"token\": \"5\", \"answer\": \"ok\"}")
-    res = KafkaEx.fetch(Kafka.Topics.sign_in_facebook, 0)
-    answer = List.to_tuple(List.first(List.first(res).partitions).message_set)
-    size = tuple_size(answer)
-    cond do
-      size == 0 -> answer_authentication()
-      size >= 1 -> answer_authentication(answer)
+  #Send on Authetication
+
+  def authentication(:cast, {:create_token, data}, {:authentication, _loop_data}) do
+    message = %{user_id_facebook: data.user_idfacebook}
+    Authentication.send_message(message, 0)
+    answer = Authentication.answer_authentication(0)
+    case answer.answer do
+      "ok" -> {:next_state, :save_token, {:save_token, data}}
+      _ -> {:next_state, :error, {:error, answer.answer}}
     end
   end
 
-  def answer_authentication(answer) do
-      value = elem(answer, 0)
-      decode = Poison.decode!(value.value, as: %Answer_Authentication{})
-      decode
+  def authentication(event_type, event_content, data) do
+    handle_event(event_type, event_content, data)
   end
 
-  def departure_token_device(:cast, {:send_token, data}, {:departure_token_device}) do
-    structe_for_notifiaction = %{token: data.token, user_id: data.user_id}
-    json = Poison.encode!(structe_for_notifiaction)
-    KafkaEx.produce(Kafka.Topics.save_device_token, 0, json)
+  #Send on Notification
+  def save_token(:cast, {:save_token_notification, data}, {:save_token, _loop_data}) do
+    message = %{token: data.token, user_id: data.user_id}
+    Notification.send_message_notification(message, 0)
     {:next_state, :end_fsm, {:end_fsm}}
   end
 
-  def departure_token_device(event_type, event_content, data) do
+  def save_token(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
   end
 
   def end_fsm(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
   end
-  def error(:cast, {:reset}, _loop_data) do
-    {:next_state, :sign_in, {:sign_in, []}}
-  end
+
   def error(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
   end

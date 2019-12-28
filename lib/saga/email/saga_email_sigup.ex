@@ -32,8 +32,8 @@ defmodule Sagas.Email.SignUp do
   #Authentication Microservice
   def sign_up(:cast, {:registration, user}, _loop_data) do
     message = %{email: user.email, password: user.password}
-    Authentication.send_message_authentication(message, 0)
-    answer = Authentication.answer_authentication(0)
+    Authentication.send_message_authentication_sign_up(message, 0)
+    answer = Authentication.answer_authentication_sign_up(0)
     case answer.answer do
       "ok" -> {:next_state, :confirm_email, {:confirm_email, answer}}
       _ -> {:next_state, :error, {:error, answer.answer}}

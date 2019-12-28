@@ -14,11 +14,17 @@ defmodule Saga.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {Saga.Application, []},
+      env: [
+        ssl_cert: "priv/ssl/server.crt",
+        ssl_key: "priv/ssl/server.pem",
+        grpc_host: "localhost",
+        grpc_port: "50051"
+      ],
       extra_applications: [:logger],
       applications: [
         :kafka_ex, :grpc
-      ],
-      mod: {Saga.Application, []}
+      ]
     ]
   end
 

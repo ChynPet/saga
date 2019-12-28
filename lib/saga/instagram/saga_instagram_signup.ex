@@ -11,20 +11,20 @@ defmodule Sagas.Instagram.SignUp do
     GenStateMachine.cast(pid, {:send_in_instagram, data})
   end
 
-  def send_in_authentication(pid) do
-    GenStateMachine.cast(pid, {:send_in_authentication})
+  def send_in_authentication(pid, data) do
+    GenStateMachine.cast(pid, {:send_in_authentication, data})
   end
 
-  def add_user_id(pid, data) do
-    GenStateMachine.cast(pid, {:add_user_id, data})
+  def add_user_id(pid) do
+    GenStateMachine.cast(pid, {:add_user_id})
   end
 
-  def send_userpic(pid, data) do
-    GenStateMachine.cast(pid, {:send_userpic, data})
+  def send_userpic(pid) do
+    GenStateMachine.cast(pid, {:send_userpic})
   end
 
-  def send_token(pid, data) do
-    GenStateMachine.cast(pid, {:send_token, data})
+  def send_token(pid) do
+    GenStateMachine.cast(pid, {:send_token})
   end
   def get_data (pid) do
     GenStateMachine.call(pid, :get_data)
@@ -34,32 +34,16 @@ defmodule Sagas.Instagram.SignUp do
     GenStateMachine.stop(pid)
   end
 
-  #Structure for storing information from microservice Authentication
-  defmodule User do
-    @derive [Poison.Encoder]
-    defstruct [:user_id, :user_pic, :token]
-  end
-
-  defmodule Authentication do
-    @derive [Poison.Encoder]
-    defstruct [:user_id, :instagram_userid, :token]
-  end
-
-  defmodule PhotoAPI do
-    @derive [Poison.Encoder]
-    defstruct [:user_id, :userpic]
-  end
   #States FSM
 
   #On instagram Microservice
   def registration(:cast, {:send_in_instagram, data}, _loop_data) do
-    struct_instagram = %{token: data.token_instagram, fuser_id: data.user_idinstagram}
-    encode_json = Poison.encode!(struct_instagram)
-    KafkaEx.produce(Kafka.Topics.sign_up_instagram, 0, encode_json)
-    res = answer_instagram()
-    case res do
-      %User{} -> {:next_state, :creating_token, {:creating_token, {data, res}}}
-      _ -> {:next_state, :error, {:error, "Not exists user"}}
+    message = %{instagram_token: data.token_instagram, instagram_id: data.user_idinstagram}
+    Instagram.send_message_sign_up(message, 0)
+    answer = Instagram.answer_instagram(0)
+    case answer.answer do
+      "ok" -> {:next_state, :creating_token, {:creating_token, answer}}
+      _ -> {:next_state, :error, {:error, answer.answer}}
     end
   end
 
@@ -67,33 +51,15 @@ defmodule Sagas.Instagram.SignUp do
     handle_event(event_type, event_content, data)
   end
 
-  def answer_instagram do
-    KafkaEx.produce(Kafka.Topics.answer_instagram, 0 , "{\"user_id\": \"1\", \"user_pic\": \"5\", \"token\": \"5\"}")
-    res = KafkaEx.fetch(Kafka.Topics.answer_instagram, 0)
-    answer = List.to_tuple(List.first(List.first(res).partitions).message_set)
-    size = tuple_size(answer)
-    cond do
-      size == 0 -> answer_instagram()
-      size >= 1 -> answer_instagram(answer)
-    end
-  end
-
-  def answer_instagram(answer) do
-      value = elem(answer, 0)
-      decode = Poison.decode!(value.value, as: %User{})
-      decode
-  end
-
   #On Authentication Microservice
-  def creating_token(:cast, {:send_in_authentication}, {:creating_token, {data, res}}) do
-    user = Saga.Api.UserInstagram.new(user_idinstagram: res.user_id, token_instagram: res.token, user_pic: res.user_pic, user_id: data.user_id, token: data.token)
-    structure_message = %{fuser_id: user.user_idinstagram}
-    message = Poison.encode!(structure_message)
-    KafkaEx.produce(Kafka.Topics.authentication_token_create, 0, message)
-    answer = answer_authentication()
-    case answer do
-      %Authentication{} -> {:next_state, :addition_userid, {:addition_userid, {user, answer}}}
-      _ -> {:next_state, :error, {:error, "Not exists user"}}
+  def creating_token(:cast, {:send_in_authentication, user}, {:creating_token, answer}) do
+    new_user = Saga.Api.UserInstagram.new(user_idinstagram: user.user_idinstagram, token_instagram: user.token_instagram, user_pic: answer.user_pic, user_id: user.user_id, token: user.token)
+    message = %{user_idinstagram: new_user.user_idinstagram}
+    Authentication.send_message(message, 0)
+    answer = Authentication.answer_authentication(0)
+    case answer.answer do
+      "ok" -> {:next_state, :addition_userid, {:addition_userid, {new_user, answer}}}
+      _ -> {:next_state, :error, {:error, answer.answer}}
     end
 
   end
@@ -102,35 +68,16 @@ defmodule Sagas.Instagram.SignUp do
     handle_event(event_type, event_content, data)
   end
 
-  def answer_authentication do
-    KafkaEx.produce(Kafka.Topics.authentication_token_create, 0 , "{\"user_id\": \"1\", \"instagram_userid\": \"5\", \"token\": \"5\"}")
-    res = KafkaEx.fetch(Kafka.Topics.authentication_token_create, 0)
-    answer = List.to_tuple(List.first(List.first(res).partitions).message_set)
-    size = tuple_size(answer)
-    cond do
-      size == 0 -> answer_authentication()
-      size >= 1 -> answer_authentication(answer)
+  #On instagram Microservice
+  def addition_userid(:cast, {:add_user_id}, {:addition_userid, {loop_data, answer}}) do
+    new_user = Saga.Api.UserInstagram.new(user_id: answer.user_id, user_idinstagram: loop_data.user_idinstagram, user_pic: loop_data.user_pic, token_instagram: loop_data.token_instagram, token: answer.token)
+    message = %{instagram_id: new_user.user_idinstagram, user_id: new_user.user_id}
+    Instagram.send_message(message, 0)
+    answer = Instagram.answer_instagram_id(0)
+    case answer.answer do
+      "ok" -> {:next_state, :add_userpic, {:add_userpic, new_user}}
+      _ -> {:next_state, :error, {:error, answer.answer}}
     end
-  end
-
-  def answer_authentication(answer) do
-      value = elem(answer, 0)
-      decode = Poison.decode!(value.value, as: %Authentication{})
-      decode
-  end
-
-   #On Instagram Microservice
-  def addition_userid(:cast, {:add_user_id, _data}, {:addition_userid, {loop_data, res}}) do
-    user = Saga.Api.UserInstagram.new(user_id: "1", user_idinstagram: loop_data.user_idinstagram, user_pic: loop_data.user_pic, token_instagram: loop_data.token_instagram, token: "aa")
-    struct_instagram = %{token: user.token_instagram, fuser_id: user.user_idinstagram}
-    encode_json = Poison.encode!(struct_instagram)
-    KafkaEx.produce(Kafka.Topics.fetch_userid_instagram, 0, encode_json)
-    res = answer_instagram()
-    case res do
-      %User{} -> {:next_state, :departure_userpic, {:departure_userpic, user}}
-      _ -> {:next_state, :error, {:error, "Not exists user"}}
-    end
-
   end
 
   def addition_userid(event_type, event_content, data) do
@@ -138,47 +85,28 @@ defmodule Sagas.Instagram.SignUp do
   end
 
   #On Photo API
-  def departure_userpic(:cast, {:send_userpic, _user}, {:departure_userpic, data}) do
-    struct_photo = %{user_id: data.user_id, userpic: data.user_pic}
-    json = Poison.encode!(struct_photo)
-    KafkaEx.produce(Kafka.Topics.photo_api, 0, json)
-    answer = answer_photo_api()
+  def add_userpic(:cast, {:send_userpic}, {:add_userpic, data}) do
+    message = %{user_id: data.user_id, userpic: data.user_pic}
+    Photo.API.send_message(message, 0)
+    answer = Photo.API.answer(0)
     case answer do
-      %PhotoAPI{} -> {:next_state, :departure_token_device, {:departure_token_device, data}}
+      %Answer.Photo.API{} -> {:next_state, :save_token, {:save_token, data}}
+      _ -> {:next_state, :error, {:error, answer}}
     end
-
   end
 
-  def departure_userpic(event_type, event_content, data) do
+  def add_userpic(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
   end
 
-  def answer_photo_api do
-    KafkaEx.produce(Kafka.Topics.answer_photo_api, 0 , "{\"user_id\": \"1\", \"userppic\": \"5\"}")
-    res = KafkaEx.fetch(Kafka.Topics.answer_photo_api, 0)
-    answer = List.to_tuple(List.first(List.first(res).partitions).message_set)
-    size = tuple_size(answer)
-    cond do
-      size == 0 -> answer_photo_api()
-      size >= 1 -> answer_photo_api(answer)
-    end
-  end
-
-  def answer_photo_api(answer) do
-      value = elem(answer, 0)
-      decode = Poison.decode!(value.value, as: %PhotoAPI{})
-      decode
-  end
-
   #On Push notification
-  def departure_token_device(:cast, {:send_token, data}, {:departure_token_device, loop_data}) do
-    structe_for_notifiaction = %{token: data.token, user_id: data.user_id}
-    json = Poison.encode!(structe_for_notifiaction)
-    KafkaEx.produce(Kafka.Topics.save_device_token, 0, json)
+  def save_token(:cast, {:send_token}, {:save_token, loop_data}) do
+    message = %{token: loop_data.token, user_id: loop_data.user_id}
+    Notification.send_message_notification(message, 0)
     {:next_state, :end_fsm, {:end_fsm, loop_data}}
   end
 
-  def departure_token_device(event_type, event_content, data) do
+  def save_token(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
   end
 

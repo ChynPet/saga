@@ -1,6 +1,9 @@
 use Mix.Config
 
 config :grpc, start_server: true
+config :saga,
+  ssl_cert: "./ssl/server.crt",
+  ssl_key: "./ssl/server.pem"
 
 config :kafka_ex,
   brokers: [

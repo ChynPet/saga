@@ -1,6 +1,6 @@
 defmodule Authentication do
 
-  def send_message_authentication(message, partition) do
+  def send_message_authentication_sign_up(message, partition) do
     json = Poison.encode!(message)
     KafkaEx.produce(Kafka.Topics.authentication_sign_up, partition, json)
   end
@@ -10,9 +10,23 @@ defmodule Authentication do
     KafkaEx.produce(Kafka.Topics.authentication_sign_in, partition, json)
   end
 
+  def send_message(message, partition) do
+    json = Poison.encode!(message)
+    KafkaEx.produce(Kafka.Topics.authentication_token_create, partition, json)
+  end
+
   def answer_sign_in(partition) do
     KafkaEx.produce(Kafka.Topics.answer_authentication_sign_in, partition, "{\"user_id\": \"5\", \"token\": \"5\", \"answer\": \"ok\"}")
     message = KafkaEx.fetch(Kafka.Topics.answer_authentication_sign_in, partition)
+    answer = List.to_tuple(List.first(List.first(message).partitions).message_set)
+    value = elem(answer, 0).value
+    decode = Poison.decode!(value, as: %Answer.Authentication{})
+    decode
+  end
+
+  def answer_authentication_sign_up(partition) do
+    KafkaEx.produce(Kafka.Topics.answer_authentication_sign_up, partition , "{\"user_id\": \"5\", \"token\": \"5\", \"answer\": \"ok\"}")
+    message = KafkaEx.fetch(Kafka.Topics.answer_authentication_sign_up, partition)
     answer = List.to_tuple(List.first(List.first(message).partitions).message_set)
     value = elem(answer, 0).value
     decode = Poison.decode!(value, as: %Answer.Authentication{})
