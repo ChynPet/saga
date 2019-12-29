@@ -1,0 +1,54 @@
+
+=====
+===== LOGGING STARTED Sat Dec 28 22:54:38 EET 2019
+=====
+Erlang/OTP 21 [erts-10.3.5.7] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe]
+
+
+22:54:39.506 [debug] Successfully connected to broker "10.50.0.1":9092
+
+22:54:39.517 [debug] Establishing connection to broker 1001: "10.50.0.1" on port 9092
+
+22:54:39.518 [debug] Successfully connected to broker "10.50.0.1":9092
+
+22:54:39.524 [info]  Running Saga.Endpoint with Cowboy using http://0.0.0.0:50051
+Interactive Elixir (1.9.0) - press Ctrl+C to exit (type h() ENTER for help)
+iex(saga@127.0.0.1)1> 
+22:55:35.166 [info]  Handled by Saga.Server.sign_up_email
+
+22:55:35.167 [error] ** (UndefinedFunctionError) function GenStateMachine.start_link/2 is undefined (module GenStateMachine is not available)
+    GenStateMachine.start_link(Sagas.Email.SignUp, {:sign_up, []})
+    (saga) lib/saga/server.ex:15: Saga.Server.sign_up_email/2
+    (grpc) lib/grpc/server.ex:164: anonymous fn/6 in GRPC.Server.call_with_interceptors/4
+    (grpc) lib/grpc/logger.ex:30: GRPC.Logger.Server.call/4
+    (grpc) lib/grpc/server.ex:181: GRPC.Server.call_with_interceptors/4
+    (grpc) lib/grpc/adapter/cowboy/handler.ex:352: GRPC.Adapter.Cowboy.Handler.do_call_rpc/3
+    (grpc) lib/grpc/adapter/cowboy/handler.ex:325: GRPC.Adapter.Cowboy.Handler.call_rpc/3
+
+
+=====
+===== LOGGING STARTED Sat Dec 28 23:06:56 EET 2019
+=====
+Erlang/OTP 21 [erts-10.3.5.7] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe]
+
+
+23:06:57.543 [debug] Successfully connected to broker "10.50.0.1":9092
+
+23:06:57.547 [debug] Establishing connection to broker 1001: "10.50.0.1" on port 9092
+
+23:06:57.547 [debug] Successfully connected to broker "10.50.0.1":9092
+
+23:06:57.551 [info]  Running Saga.Endpoint with Cowboy using http://0.0.0.0:50051
+Interactive Elixir (1.9.0) - press Ctrl+C to exit (type h() ENTER for help)
+iex(saga@127.0.0.1)1> 
+23:07:14.085 [info]  Handled by Saga.Server.sign_up_email
+
+23:07:14.165 [info]  Response :ok in 79ms
+
+===== ALIVE Sat Dec 28 23:22:14 EET 2019
+
+===== ALIVE Sat Dec 28 23:37:14 EET 2019
+
+===== ALIVE Sat Dec 28 23:52:14 EET 2019
+
+===== ALIVE Sun Dec 29 00:07:14 EET 2019

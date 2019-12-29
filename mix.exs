@@ -23,7 +23,7 @@ defmodule Saga.MixProject do
       ],
       extra_applications: [:logger],
       applications: [
-        :kafka_ex, :grpc
+        :kafka_ex, :grpc, :gen_state_machine, :poison
       ]
     ]
   end
@@ -36,7 +36,8 @@ defmodule Saga.MixProject do
       {:grpc, github: "elixir-grpc/grpc"},
       {:gen_state_machine, "~> 2.0"},
       {:poison, "~> 3.1"},
-      {:kafka_ex, "~> 0.10"}
+      {:kafka_ex, "~> 0.10"},
+      {:distillery, "~> 2.0"}
     ]
   end
 end

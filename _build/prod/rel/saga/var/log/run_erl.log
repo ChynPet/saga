@@ -1,0 +1,8 @@
+run_erl [19412] Sat Dec 28 23:06:56 2019
+Args before exec of shell:
+run_erl [19412] Sat Dec 28 23:06:56 2019
+argv[0] = sh
+run_erl [19412] Sat Dec 28 23:06:56 2019
+argv[1] = -c
+run_erl [19412] Sat Dec 28 23:06:56 2019
+argv[2] = exec "/home/petro/Projects/saga/_build/prod/rel/saga/bin/saga" "console" --  
