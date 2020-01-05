@@ -1,7 +1,6 @@
 defmodule User do
 
   alias Saga.Api.{
-    User,
     InitialState
   }
 

@@ -1,7 +1,6 @@
 defmodule Saga.Server do
 
   alias Saga.Api.{
-    User,
     ResponseEmail,
     ResponseFacebook,
     ResponseInstagram,
@@ -10,7 +9,7 @@ defmodule Saga.Server do
 
   use GRPC.Server, service: InitialState.Service
 
-  @spec sign_up_email(Saga.Api.User.t, GRPC.Server.Stream.t) :: Saga.Api.Response.t
+  @spec sign_up_email(Saga.Api.User.t(), GRPC.Server.Stream.t()) :: GRPC.Server.Stream.t()
   def sign_up_email(user, stream) do
     {:ok, pid} = Sagas.Email.SignUp.start_link
     status = case Sagas.Email.SignUp.registraion(pid, user) do
@@ -34,6 +33,7 @@ defmodule Saga.Server do
     GRPC.Server.send_reply(stream, result)
   end
 
+  @spec sign_in_email(Saga.Api.User.t(), GRPC.Server.Stream.t()) :: GRPC.Server.Stream.t()
   def sign_in_email(user, stream) do
     {:ok, pid} = Sagas.Email.SignIn.start_link
     Sagas.Email.SignIn.login(pid, user)
@@ -49,6 +49,7 @@ defmodule Saga.Server do
     GRPC.Server.send_reply(stream, result)
   end
 
+  @spec sign_up_facebook(Saga.Api.UserFacebook.t(), GRPC.Server.Stream.t()) :: GRPC.Server.Stream.t()
   def sign_up_facebook(user, stream) do
     {:ok, pid} = Sagas.Facebook.SignUp.start_link
     status = case Sagas.Facebook.SignUp.send_in_facebook(pid, user) do
@@ -84,6 +85,8 @@ defmodule Saga.Server do
     GRPC.Server.send_reply(stream, result)
   end
 
+  @spec sign_in_facebook(Saga.Api.UserFacebook.t(), GRPC.Server.Stream.t()) ::
+          GRPC.Server.Stream.t()
   def sign_in_facebook(user, stream) do
     {:ok, pid} = Sagas.Facebook.SignIn.start_link
     status = case Sagas.Facebook.SignIn.login(pid, user) do
@@ -108,6 +111,8 @@ defmodule Saga.Server do
     GRPC.Server.send_reply(stream, result)
   end
 
+  @spec sign_up_instagram(Saga.Api.UserInstagram.t(), GRPC.Server.Stream.t()) ::
+          GRPC.Server.Stream.t()
   def sign_up_instagram(user, stream) do
     {:ok, pid} = Sagas.Instagram.SignUp.start_link
     status = case Sagas.Instagram.SignUp.send_in_instagram(pid, user) do
@@ -144,6 +149,8 @@ defmodule Saga.Server do
 
 
 
+  @spec sign_in_instagram(Saga.Api.UserInstagram.t(), GRPC.Server.Stream.t()) ::
+          GRPC.Server.Stream.t()
   def sign_in_instagram(user, stream) do
     {:ok, pid} = Sagas.Instagram.SignIn.start_link
     status = case Sagas.Instagram.SignIn.login(pid, user) do

@@ -37,7 +37,8 @@ defmodule Saga.MixProject do
       {:gen_state_machine, "~> 2.0"},
       {:poison, "~> 3.1"},
       {:kafka_ex, "~> 0.10"},
-      {:distillery, "~> 2.0"}
+      {:dialyxir, "~> 0.4", only: [:dev]},
+      {:distillery, "~> 2.0"},
     ]
   end
 end

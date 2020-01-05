@@ -34,3 +34,16 @@ services:
         KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       volumes:
         - kafkaVolume:/var/run/docker.sock
+
+  # saga:
+      # build: .
+      # # restart: on-failure
+      # ports:
+      #   - "50051:50051"
+      # depends_on:
+      #   - zookeeper
+      #   - kafka
+      # networks:
+      #   contracts-server-network:
+      #     ipv4_address: 10.50.1.3
+      

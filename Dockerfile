@@ -26,8 +26,6 @@ RUN mkdir /opt/saga \
   
 RUN rm -rf /opt/saga-builder
 
-# #############################################################
-
 RUN cp -avr /opt/saga /usr/local/bin/saga
 WORKDIR /usr/local/bin/saga/bin
 
@@ -35,4 +33,4 @@ ENV PATH=${PATH}:/usr/local/bin/saga/bin
 
 EXPOSE 9092 50051
 
-CMD ["saga", "foreground"]
+CMD ["saga","foreground"]
